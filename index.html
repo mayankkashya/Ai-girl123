@@ -11,3 +11,289 @@
   canvas { display: block; width: 100%; height: 100%; outline: none; }
   #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; color: #e0559b; font-weight: bold; pointer-events: none; text-align: center; }
   #keyBtn { position: absolute; top: 10px; right: 10px; padding: 6px 12px; font-size: 12px; background: rgba(0,0,0,.5); border: 1px solid #444; }
+  .chat-container { height: 35%; background: #1c1c24; border-top: 1px solid #333; display: flex; flex-direction: column; z-index: 10; box-shadow: 0 -10px 30px rgba(0,0,0,.5); }
+  .log { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 15px; line-height: 1.4; }
+  .msg.user { align-self: flex-end; background: #2b2b36; border-bottom-right-radius: 2px; }
+  .msg.aria { align-self: flex-start; background: #e0559b; border-bottom-left-radius: 2px; box-shadow: 0 4px 15px rgba(224,85,155,.2); }
+  .controls { padding: 12px 15px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; background: rgba(0,0,0,.2); }
+  input[type="text"] { flex: 1; min-width: 0; padding: 12px 15px; border-radius: 25px; border: 1px solid #444; background: #111; color: white; outline: none; font-size: 16px; }
+  input[type="text"]:focus { border-color: #e0559b; }
+  button { background: #e0559b; color: white; border: none; padding: 0 24px; border-radius: 25px; cursor: pointer; font-weight: bold; transition: .2s; }
+  button:hover { background: #ff5d8f; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.0.12/lib/three-vrm.js"></script>
+</head>
+<body>
+
+<div id="canvas-container">
+  <div id="loading">Loading 3D Avatar...</div>
+  <button id="keyBtn" type="button">API Key</button>
+</div>
+
+<div class="chat-container">
+  <div class="log" id="log"></div>
+  <form class="controls" id="form">
+    <input type="text" id="input" placeholder="Say something..." autocomplete="off">
+    <button type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+  function showLoadError(msg){var l=document.getElementById('loading');if(l){l.style.display='block';l.textContent=msg;}}
+  window.addEventListener('error',function(e){showLoadError('Error: '+(e.message||'script failed'));});
+  window.addEventListener('unhandledrejection',function(e){showLoadError('Error: '+((e.reason&&e.reason.message)||e.reason));});
+  setTimeout(function(){if(!window.__ariaReady)showLoadError('3D libraries failed to load. Open this file via https (GitHub Pages) with internet on.');},8000);
+</script>
+<script>
+  window.__ariaReady = true;
+  const GLTFLoader = THREE.GLTFLoader;
+  const OrbitControls = THREE.OrbitControls;
+  const { VRMLoaderPlugin, VRMUtils } = window.THREE_VRM;
+
+  /* ===== 1. CONFIG ===== */
+  const MODEL = 'gemini-2.5-flash';
+  const VRM_URL = 'https://cdn.jsdelivr.net/gh/vrm-c/UniVRM@master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm';
+  // Key is entered in-app and stored in this browser only (not in the file).
+  const store = {
+    get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }
+  };
+  let API_KEY = store.get('aria_key') || '';
+  function askKey() {
+    const k = prompt('Enter your Gemini API key (stored only in this browser):', API_KEY);
+    if (k !== null) { API_KEY = k.trim(); store.set('aria_key', API_KEY); }
+    return API_KEY;
+  }
+  document.getElementById('keyBtn').onclick = askKey;
+
+  /* ===== 2. SCENE ===== */
+  const container = document.getElementById('canvas-container');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 20);
+  camera.position.set(0, 1.4, 1.3);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 1.35, 0);
+  controls.enableDamping = true;
+  controls.update();
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.8));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+  dirLight.position.set(1, 2, 1);
+  scene.add(dirLight);
+
+  /* ===== 3. AVATAR ===== */
+  let currentVrm;
+  const loader = new GLTFLoader();
+  loader.register((parser) => new VRMLoaderPlugin(parser));
+  loader.load(
+    VRM_URL,
+    (gltf) => {
+      const vrm = gltf.userData.vrm;
+      VRMUtils.removeUnnecessaryJoints(gltf.scene);
+      VRMUtils.rotateVRM0(vrm);
+      scene.add(vrm.scene);
+      currentVrm = vrm;
+      document.getElementById('loading').style.display = 'none';
+    },
+    (p) => { if (p.total) document.getElementById('loading').textContent = 'Loading 3D Avatar... ' + Math.round(100 * p.loaded / p.total) + '%'; },
+    (err) => {
+      console.error('Error loading VRM:', err);
+      document.getElementById('loading').textContent = 'Avatar failed to load. Check VRM_URL / network.';
+    }
+  );
+
+  /* ===== 4. ANIMATION ===== */
+  const clock = new THREE.Clock();
+  let isSpeaking = false;
+  const lookTarget = new THREE.Vector2(0, 0);
+  const VISEMES = ['aa', 'ih', 'ou', 'ee', 'oh'];
+
+  container.addEventListener('pointermove', (e) => {
+    const r = container.getBoundingClientRect();
+    lookTarget.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    lookTarget.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+  });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = clock.getDelta();
+    const time = clock.elapsedTime;
+
+    if (currentVrm) {
+      const em = currentVrm.expressionManager;
+      const spine = currentVrm.humanoid.getNormalizedBoneNode('spine');
+      if (spine) spine.rotation.x = Math.sin(time * Math.PI) * 0.015;
+
+      const neck = currentVrm.humanoid.getNormalizedBoneNode('neck');
+      if (neck) {
+        neck.rotation.y = THREE.MathUtils.lerp(neck.rotation.y, -lookTarget.x * 0.4, 0.08);
+        neck.rotation.x = THREE.MathUtils.lerp(neck.rotation.x, lookTarget.y * 0.3, 0.08);
+      }
+
+      if (em) {
+        em.setValue('blink', Math.sin(time * 3.5) > 0.96 ? 1 : 0);
+        VISEMES.forEach(v => em.setValue(v, 0));
+        if (isSpeaking) {
+          em.setValue(VISEMES[Math.floor(time * 18) % 5], Math.random() * 0.7 + 0.3);
+        }
+      }
+      currentVrm.update(dt);
+    }
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
+
+  /* ===== 5. MEMORY, AI & CHAT ===== */
+  const log = document.getElementById('log');
+  const input = document.getElementById('input');
+  const EMOTION_RE = /\{\s*"emotion"\s*:\s*"([^"]+)"\s*\}/;
+
+  const SYSTEM_PROMPT = `You are Aria, the user's best friend. You are a realistic, 3D anime girl.
+Personality: You are helpful and guiding, but you also tease, get irritated when annoyed, and have strong personal opinions. You are NOT a robotic AI assistant.
+Rules:
+- Keep responses short, natural, and conversational (1-3 sentences).
+- Never use emojis or markdown formatting.
+- Always remember past details the user has told you.
+- End your response with a JSON block defining your current facial expression based on the conversation context.
+Format your response EXACTLY like this:
+Your spoken reply text here. {"emotion": "neutral|happy|angry|sad|surprised|shy"}`;
+
+  let history = [];
+  try { history = JSON.parse(store.get('aria_memory')) || []; } catch { history = []; }
+
+  function trimHistory() {
+    if (history.length > 40) history = history.slice(-40);
+    while (history.length && history[0].role !== 'user') history.shift(); // Gemini needs user first
+  }
+  function saveMemory() { trimHistory(); store.set('aria_memory', JSON.stringify(history)); }
+
+  function addMessage(text, sender) {
+    const div = document.createElement('div');
+    div.className = `msg ${sender}`;
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function renderHistory() {
+    if (!history.length) {
+      addMessage('System initialized. I am loaded in full 3D now.', 'aria');
+      return;
+    }
+    history.forEach(m => {
+      if (m.role === 'user') addMessage(m.content, 'user');
+      else {
+        const t = m.content.replace(EMOTION_RE, '').trim();
+        if (t) addMessage(t, 'aria');
+      }
+    });
+  }
+  renderHistory();
+
+  let emotionTimer;
+  function setEmotion(name, ms = 4000) {
+    if (!currentVrm || !currentVrm.expressionManager) return;
+    const em = currentVrm.expressionManager;
+    ['happy', 'angry', 'sad', 'relaxed', 'surprised'].forEach(e => em.setValue(e, 0));
+    clearTimeout(emotionTimer);
+    if (name !== 'neutral') {
+      em.setValue(name, 1);
+      emotionTimer = setTimeout(() => setEmotion('neutral'), ms);
+    }
+  }
+
+  function speak(text, emotion) {
+    let blend = 'neutral';
+    if (['excited', 'happy', 'love'].includes(emotion)) blend = 'happy';
+    else if (['sad', 'worried'].includes(emotion)) blend = 'sad';
+    else if (emotion === 'angry') blend = 'angry';
+    else if (emotion === 'surprised') blend = 'surprised';
+    else if (emotion === 'shy') blend = 'relaxed';
+    setEmotion(blend, Math.max(2000, text.length * 80));
+
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const v = speechSynthesis.getVoices().find(v => /female|samantha|uk english/i.test(v.name));
+    if (v) u.voice = v;
+    u.rate = 1.05;
+    u.pitch = 1.2;
+    u.onstart = () => { isSpeaking = true; };
+    u.onend = u.onerror = () => { isSpeaking = false; };
+    speechSynthesis.speak(u);
+  }
+
+  let busy = false;
+  async function generateReply(userText) {
+    if (!API_KEY && !askKey()) {
+      addMessage('I need a Gemini API key first. Tap "API Key" at the top right.', 'aria');
+      return;
+    }
+    busy = true;
+    history.push({ role: 'user', content: userText });
+    trimHistory();
+
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: history.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+          generationConfig: { temperature: 0.7, maxOutputTokens: 400, thinkingConfig: { thinkingBudget: 0 } }
+        })
+      });
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error.message || 'API error');
+      const raw = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
+      if (!raw) throw new Error(data.promptFeedback?.blockReason ? 'Blocked: ' + data.promptFeedback.blockReason : 'Empty reply');
+
+      history.push({ role: 'assistant', content: raw });
+      saveMemory();
+
+      const m = raw.match(EMOTION_RE);
+      const emotion = m ? m[1].toLowerCase() : 'neutral';
+      const spoken = raw.replace(EMOTION_RE, '').trim() || '...';
+      addMessage(spoken, 'aria');
+      speak(spoken, emotion);
+    } catch (err) {
+      console.error(err);
+      history.pop(); // drop the unanswered user message
+      saveMemory();
+      addMessage('Error: ' + err.message, 'aria');
+    } finally {
+      busy = false;
+    }
+  }
+
+  document.getElementById('form').onsubmit = (e) => {
+    e.preventDefault();
+    const val = input.value.trim();
+    if (!val || busy) return;
+    input.value = '';
+    addMessage(val, 'user');
+    generateReply(val);
+  };
+
+  if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+</script>
+</body>
+</html>
