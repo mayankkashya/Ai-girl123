@@ -63,6 +63,7 @@
 
   /* ===== 1. CONFIG ===== */
   const MODEL = 'gemini-3.8-flash';
+  const FALLBACK_MODEL = 'gemini-3.7-flash';
   const VRM_URL = 'https://cdn.jsdelivr.net/gh/vrm-c/UniVRM@master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm';
   // Key is entered in-app and stored in this browser only (not in the file).
   const store = {
@@ -123,6 +124,7 @@
   const clock = new THREE.Clock();
   let isSpeaking = false;
   const lookTarget = new THREE.Vector2(0, 0);
+  const ARM_DOWN = -1.2; // flip sign to +1.2 if the arms go up instead of down
   const VISEMES = ['aa', 'ih', 'ou', 'ee', 'oh'];
 
   container.addEventListener('pointermove', (e) => {
@@ -140,6 +142,11 @@
       const em = currentVrm.expressionManager;
       const spine = currentVrm.humanoid.getNormalizedBoneNode('spine');
       if (spine) spine.rotation.x = Math.sin(time * Math.PI) * 0.015;
+
+      const lArm = currentVrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+      const rArm = currentVrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+      if (lArm) lArm.rotation.z = ARM_DOWN;
+      if (rArm) rArm.rotation.z = -ARM_DOWN;
 
       const neck = currentVrm.humanoid.getNormalizedBoneNode('neck');
       if (neck) {
@@ -258,18 +265,29 @@ Your spoken reply text here. {"emotion": "neutral|happy|angry|sad|surprised|shy"
     trimHistory();
 
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: history.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-          generationConfig: { temperature: 0.7, maxOutputTokens: 800, thinkingConfig: { thinkingLevel: 'low' } }
-        })
+      const body = JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: history.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+        generationConfig: { temperature: 0.7, maxOutputTokens: 800, thinkingConfig: { thinkingLevel: 'low' } }
       });
-      const data = await res.json();
+      // Retry on overload (429/500/503), then fall back to the older model
+      let data, lastErr;
+      outer: for (const model of [MODEL, FALLBACK_MODEL]) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+            body
+          });
+          data = await res.json();
+          if (!data.error) break outer;
+          lastErr = data.error;
+          if (![429, 500, 503].includes(data.error.code)) throw new Error(data.error.message || 'API error');
+          await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+        }
+      }
+      if (data.error) throw new Error(lastErr?.message || 'API error');
 
-      if (data.error) throw new Error(data.error.message || 'API error');
       const raw = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
       if (!raw) throw new Error(data.promptFeedback?.blockReason ? 'Blocked: ' + data.promptFeedback.blockReason : 'Empty reply');
 
