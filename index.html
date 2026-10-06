@@ -79,6 +79,11 @@ button{font:inherit}
     <p>This build is designed to run free on GitHub Pages. Your API key is stored only in this browser's localStorage. For a public app, a server-side proxy is safer.</p>
     <label for="groqKey">Groq API key</label>
     <input id="groqKey" type="password" autocomplete="off" placeholder="gsk_…">
+    <label for="language">Aria language</label>
+    <select id="language" style="width:100%;padding:12px;border-radius:10px;border:1px solid #454552;background:#0d0d12;color:#fff;font-size:16px">
+      <option value="en">English</option>
+      <option value="hi">हिन्दी (Hindi)</option>
+    </select>
     <label for="geminiKey">Gemini API key (optional backup)</label>
     <input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…">
     <div class="row">
@@ -108,6 +113,8 @@ const set=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 
 let GROQ_KEY=get("aria_groq");
 let GEMINI_KEY=get("aria_gemini");
+let LANGUAGE=get("aria_language","en");
+$("language").value=LANGUAGE;
 $("groqKey").value=GROQ_KEY;
 $("geminiKey").value=GEMINI_KEY;
 
@@ -115,9 +122,10 @@ $("settingsBtn").onclick=()=>{$("settingsModal").style.display="flex"};
 $("closeSettings").onclick=()=>{$("settingsModal").style.display="none"};
 $("saveKeys").onclick=()=>{
   GROQ_KEY=$("groqKey").value.trim(); GEMINI_KEY=$("geminiKey").value.trim();
-  set("aria_groq",GROQ_KEY); set("aria_gemini",GEMINI_KEY);
+  LANGUAGE=$("language").value;
+  set("aria_groq",GROQ_KEY); set("aria_gemini",GEMINI_KEY); set("aria_language",LANGUAGE);
   $("settingsModal").style.display="none";
-  add("Keys saved on this device.","aria");
+  add(LANGUAGE==="hi" ? "सेटिंग्स सेव हो गईं।" : "Keys saved on this device.","aria");
 };
 $("clearMemory").onclick=()=>{
   if(confirm("Clear Aria's conversation memory on this device?")){
@@ -185,8 +193,9 @@ function animate(){
    const spine=h?.getNormalizedBoneNode("spine");
    if(spine) spine.rotation.x=Math.sin(t*.8)*.012;
    const la=h?.getNormalizedBoneNode("leftUpperArm"),ra=h?.getNormalizedBoneNode("rightUpperArm");
-   if(la) la.rotation.z=-1.2;
-   if(ra) ra.rotation.z=1.2;
+   // Alicia loads with raised arms. Apply a neutral arms-down pose.
+   if(la) la.rotation.z=1.05;
+   if(ra) ra.rotation.z=-1.05;
    const neck=h?.getNormalizedBoneNode("neck");
    if(neck){
      neck.rotation.y=THREE.MathUtils.lerp(neck.rotation.y,-lookX*.35,.06);
@@ -205,10 +214,14 @@ function animate(){
 }
 animate();
 
-const SYSTEM=`You are Aria, a friendly 3D anime companion. Be natural, warm, playful and concise.
+function systemPrompt(){
+  const lang = LANGUAGE === "hi" ? "Hindi" : "English";
+  return `You are Aria, a friendly 3D anime companion. Be natural, warm, playful and concise.
+Reply in ${lang}. Use natural conversational ${lang}.
 Reply in 1-3 short sentences. No markdown and no emojis.
 At the end, append exactly one JSON object: {"emotion":"neutral|happy|angry|sad|surprised|shy"}
 Do not put anything after that JSON object.`;
+}
 
 let history=[];
 try{history=JSON.parse(get("aria_memory","[]"))||[]}catch{history=[]}
@@ -222,7 +235,10 @@ function add(text,who){
  log.appendChild(d); log.scrollTop=log.scrollHeight;
 }
 function render(){
- if(!history.length){add("Hi. I'm Aria. Tap Settings to connect a free AI key, then talk to me.","aria");return}
+ if(!history.length){
+  add(LANGUAGE==="hi" ? "नमस्ते। मैं आरिया हूँ। Settings में जाकर AI key जोड़ें, फिर मुझसे बात करें।" : "Hi. I'm Aria. Tap Settings to connect a free AI key, then talk to me.","aria");
+  return;
+}
  for(const m of history){
    const text=m.role==="assistant"?clean(m.content).text:m.content;
    if(text)add(text,m.role==="user"?"user":"aria");
@@ -252,8 +268,10 @@ function speak(text,emo){
  if(!("speechSynthesis" in window))return;
  speechSynthesis.cancel();
  const u=new SpeechSynthesisUtterance(text),voices=speechSynthesis.getVoices();
- const v=voices.find(x=>/^en(-US|-GB)?$/i.test(x.lang))||voices.find(x=>/^en/i.test(x.lang));
+ const preferred=LANGUAGE==="hi" ? ["hi-IN","hi"] : ["en-US","en-GB","en"];
+ const v=voices.find(x=>preferred.includes(x.lang))||voices.find(x=>LANGUAGE==="hi"?/^hi/i.test(x.lang):/^en/i.test(x.lang));
  if(v)u.voice=v;
+ u.lang=LANGUAGE==="hi" ? "hi-IN" : "en-US";
  u.rate=1.04;u.pitch=1.16;
  u.onstart=()=>speaking=true;
  u.onend=()=>speaking=false;
@@ -268,7 +286,7 @@ async function groq(){
  const model="openai/gpt-oss-20b";
  const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
    method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
-   body:JSON.stringify({model,temperature:.7,max_tokens:260,messages:[{role:"system",content:SYSTEM},...history]})
+   body:JSON.stringify({model,temperature:.7,max_tokens:260,messages:[{role:"system",content:systemPrompt()},...history]})
  });
  const d=await r.json().catch(()=>({}));
  if(!r.ok){const e=new Error(d.error?.message||"Groq error "+r.status);e.status=r.status;e.transient=transient(r.status,e.message);throw e}
@@ -280,7 +298,7 @@ async function gemini(){
  const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{
    method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":GEMINI_KEY},
    body:JSON.stringify({
-     systemInstruction:{parts:[{text:SYSTEM}]},
+     systemInstruction:{parts:[{text:systemPrompt()}]},
      contents:history.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]})),
      generationConfig:{temperature:.7,maxOutputTokens:500}
    })
@@ -291,7 +309,7 @@ async function gemini(){
 }
 
 async function getReply(){
- if(!GROQ_KEY&&!GEMINI_KEY)throw new Error("Open Settings and add a free Groq API key.");
+ if(!GROQ_KEY&&!GEMINI_KEY)throw new Error(LANGUAGE==="hi" ? "Settings खोलकर एक free Groq API key जोड़ें।" : "Open Settings and add a free Groq API key.");
  const providers=[];
  if(GROQ_KEY)providers.push(groq);
  if(GEMINI_KEY)providers.push(gemini);
