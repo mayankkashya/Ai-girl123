@@ -1,324 +1,332 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Aria - 3D AI Companion</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101018">
+<title>Aria — Free 3D AI Companion</title>
 <style>
-  html, body { height: 100%; }
-  body { margin: 0; overflow: hidden; background: #0f0f13; font-family: system-ui, sans-serif; color: white; display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
-  #canvas-container { flex: 1; min-height: 0; position: relative; background: radial-gradient(circle at top, #2a2a35 0%, #0f0f13 80%); touch-action: none; }
-  canvas { display: block; width: 100%; height: 100%; outline: none; }
-  #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; color: #e0559b; font-weight: bold; pointer-events: none; text-align: center; }
-  #keyBtn { position: absolute; top: 10px; right: 10px; padding: 6px 12px; font-size: 12px; background: rgba(0,0,0,.5); border: 1px solid #444; }
-  .chat-container { height: 35%; background: #1c1c24; border-top: 1px solid #333; display: flex; flex-direction: column; z-index: 10; box-shadow: 0 -10px 30px rgba(0,0,0,.5); }
-  .log { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-  .msg { max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 15px; line-height: 1.4; }
-  .msg.user { align-self: flex-end; background: #2b2b36; border-bottom-right-radius: 2px; }
-  .msg.aria { align-self: flex-start; background: #e0559b; border-bottom-left-radius: 2px; box-shadow: 0 4px 15px rgba(224,85,155,.2); }
-  .controls { padding: 12px 15px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; background: rgba(0,0,0,.2); }
-  input[type="text"] { flex: 1; min-width: 0; padding: 12px 15px; border-radius: 25px; border: 1px solid #444; background: #111; color: white; outline: none; font-size: 16px; }
-  input[type="text"]:focus { border-color: #e0559b; }
-  button { background: #e0559b; color: white; border: none; padding: 0 24px; border-radius: 25px; cursor: pointer; font-weight: bold; transition: .2s; }
-  button:hover { background: #ff5d8f; }
+:root{--pink:#e0559b;--bg:#0f0f15;--panel:#191922;--line:#343441}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{overflow:hidden;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;height:100dvh;display:flex;flex-direction:column}
+#stage{position:relative;flex:1;min-height:0;background:radial-gradient(circle at 50% 5%,#30303c 0,#12121a 68%);touch-action:none}
+canvas{display:block;width:100%;height:100%}
+#status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:var(--pink);font-weight:700;font-size:16px;padding:16px;max-width:85%;pointer-events:none}
+.topbar{position:absolute;top:0;left:0;right:0;padding:12px;display:flex;justify-content:space-between;pointer-events:none}
+.badge,.settings{pointer-events:auto;background:#0009;border:1px solid #ffffff22;border-radius:999px;padding:9px 13px;color:#fff}
+.settings{cursor:pointer;font-weight:700}
+.chat{height:38%;min-height:230px;display:flex;flex-direction:column;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -12px 30px #0008;z-index:5}
+.log{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px;overscroll-behavior:contain}
+.msg{max-width:min(82%,700px);padding:10px 14px;border-radius:16px;line-height:1.4;font-size:16px;word-break:break-word}
+.user{align-self:flex-end;background:#2b2b37;border-bottom-right-radius:4px}
+.aria{align-self:flex-start;background:var(--pink);border-bottom-left-radius:4px}
+.controls{display:flex;gap:9px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#0004}
+#input{flex:1;min-width:0;border:1px solid #454552;background:#0d0d12;color:#fff;border-radius:28px;padding:13px 16px;font-size:17px;outline:none}
+#input:focus{border-color:var(--pink)}
+button{font:inherit}
+#send{border:0;border-radius:28px;background:var(--pink);color:#fff;font-weight:800;padding:0 22px;min-width:88px}
+#send:disabled{opacity:.45}
+#settingsModal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
+.card{width:min(560px,100%);background:#1b1b25;border:1px solid #444;border-radius:20px;padding:20px;box-shadow:0 20px 60px #000}
+.card h2{margin:0 0 8px}
+.card p{color:#bbb;font-size:14px;line-height:1.4}
+.card label{display:block;font-size:13px;color:#ccc;margin:14px 0 6px}
+.card input{width:100%;padding:12px;border-radius:10px;border:1px solid #454552;background:#0d0d12;color:#fff}
+.row{display:flex;gap:10px;margin-top:16px}
+.row button{padding:11px 16px;border-radius:10px;border:0}
+.primary{background:var(--pink);color:#fff;font-weight:800}.secondary{background:#33333f;color:#fff}
+.danger{background:#5a202f;color:#fff}
+.small{font-size:12px;color:#999;margin-top:10px}
+@media (orientation:landscape) and (min-width:700px){
+ .chat{height:44%;min-height:220px}.msg{font-size:15px}
+}
+@media (min-width:800px){
+ .chat{height:36%}.controls{padding-left:24px;padding-right:24px}
+ .log{padding-left:24px;padding-right:24px}
+}
 </style>
 <script type="importmap">
 {
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-    "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.0.10/lib/three-vrm.module.js"
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "@pixiv/three-vrm":"https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.0.10/lib/three-vrm.module.js"
   }
 }
 </script>
 </head>
 <body>
-
-<div id="canvas-container">
-  <div id="loading">Loading 3D Avatar...</div>
-  <button id="keyBtn" type="button">API Key</button>
+<div id="stage">
+  <div id="status">Loading Aria…</div>
+  <div class="topbar">
+    <div class="badge">ARIA</div>
+    <button class="settings" id="settingsBtn">Settings</button>
+  </div>
 </div>
 
-<div class="chat-container">
+<section class="chat">
   <div class="log" id="log"></div>
   <form class="controls" id="form">
-    <input type="text" id="input" placeholder="Say something..." autocomplete="off">
-    <button type="submit">Send</button>
+    <input id="input" autocomplete="off" placeholder="Talk to Aria…" enterkeyhint="send">
+    <button id="send" type="submit">Send</button>
   </form>
+</section>
+
+<div id="settingsModal">
+  <div class="card">
+    <h2>Aria Settings</h2>
+    <p>This build is designed to run free on GitHub Pages. Your API key is stored only in this browser's localStorage. For a public app, a server-side proxy is safer.</p>
+    <label for="groqKey">Groq API key</label>
+    <input id="groqKey" type="password" autocomplete="off" placeholder="gsk_…">
+    <label for="geminiKey">Gemini API key (optional backup)</label>
+    <input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…">
+    <div class="row">
+      <button class="primary" id="saveKeys">Save</button>
+      <button class="secondary" id="closeSettings">Close</button>
+      <button class="danger" id="clearMemory">Clear memory</button>
+    </div>
+    <div class="small">Free model target: Groq openai/gpt-oss-20b. Gemini is optional.</div>
+  </div>
 </div>
 
 <script>
-  function showLoadError(msg){var l=document.getElementById('loading');if(l){l.style.display='block';l.textContent=msg;}}
-  window.addEventListener('error',function(e){showLoadError('Error: '+(e.message||'script failed'));});
-  window.addEventListener('unhandledrejection',function(e){showLoadError('Error: '+((e.reason&&e.reason.message)||e.reason));});
-  setTimeout(function(){if(!window.__ariaReady)showLoadError('3D libraries failed to load. Open this file via https (GitHub Pages) with internet on.');},8000);
+window.addEventListener("error",e=>{const s=document.getElementById("status");if(s)s.textContent="App error: "+(e.message||"unknown error")});
+window.addEventListener("unhandledrejection",e=>{const s=document.getElementById("status");if(s)s.textContent="App error: "+((e.reason&&e.reason.message)||e.reason||"unknown error")});
 </script>
-<script type="module" onerror="showLoadError('3D libraries failed to load. Open via https (GitHub Pages) with internet on.')">
-  window.__ariaReady = true;
-  import * as THREE from 'three';
-  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-  import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
-  /* ===== 1. CONFIG ===== */
-  const MODEL = 'gemini-3.8-flash';
-  const FALLBACK_MODEL = 'gemini-3.7-flash';
-  const VRM_URL = 'https://cdn.jsdelivr.net/gh/vrm-c/UniVRM@master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm';
-  // Key is entered in-app and stored in this browser only (not in the file).
-  const store = {
-    get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
-    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }
-  };
-  let API_KEY = store.get('aria_key') || '';
-  function askKey() {
-    const k = prompt('Enter your Gemini API key (stored only in this browser):', API_KEY);
-    if (k !== null) { API_KEY = k.trim(); store.set('aria_key', API_KEY); }
-    return API_KEY;
+<script type="module">
+import * as THREE from "three";
+import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
+import {OrbitControls} from "three/addons/controls/OrbitControls.js";
+import {VRMLoaderPlugin,VRMUtils} from "@pixiv/three-vrm";
+
+const $=id=>document.getElementById(id);
+const stage=$("stage"), status=$("status"), log=$("log"), input=$("input"), send=$("send");
+const get=(k,d="")=>{try{return localStorage.getItem(k)??d}catch{return d}};
+const set=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
+
+let GROQ_KEY=get("aria_groq");
+let GEMINI_KEY=get("aria_gemini");
+$("groqKey").value=GROQ_KEY;
+$("geminiKey").value=GEMINI_KEY;
+
+$("settingsBtn").onclick=()=>{$("settingsModal").style.display="flex"};
+$("closeSettings").onclick=()=>{$("settingsModal").style.display="none"};
+$("saveKeys").onclick=()=>{
+  GROQ_KEY=$("groqKey").value.trim(); GEMINI_KEY=$("geminiKey").value.trim();
+  set("aria_groq",GROQ_KEY); set("aria_gemini",GEMINI_KEY);
+  $("settingsModal").style.display="none";
+  add("Keys saved on this device.","aria");
+};
+$("clearMemory").onclick=()=>{
+  if(confirm("Clear Aria's conversation memory on this device?")){
+    localStorage.removeItem("aria_memory"); history=[]; log.innerHTML="";
+    add("Memory cleared. Fresh start.","aria");
   }
-  document.getElementById('keyBtn').onclick = askKey;
+};
 
-  /* ===== 2. SCENE ===== */
-  const container = document.getElementById('canvas-container');
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 20);
-  camera.position.set(0, 1.4, 1.3);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(30,1,.1,20);
+camera.position.set(0,1.35,1.35);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
+stage.appendChild(renderer.domElement);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  container.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.enablePan=false; controls.minDistance=.8; controls.maxDistance=2.7;
+controls.target.set(0,1.25,0); controls.update();
+scene.add(new THREE.HemisphereLight(0xffffff,0x444444,.9));
+const dl=new THREE.DirectionalLight(0xffffff,1.1); dl.position.set(1.5,2.5,1.5); scene.add(dl);
 
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 1.35, 0);
-  controls.enableDamping = true;
-  controls.update();
+function resize(){
+  const w=stage.clientWidth,h=stage.clientHeight;
+  camera.aspect=w/Math.max(h,1); camera.updateProjectionMatrix(); renderer.setSize(w,h,false);
+}
+addEventListener("resize",resize); resize();
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.8));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-  dirLight.position.set(1, 2, 1);
-  scene.add(dirLight);
+let vrm=null;
+const loader=new GLTFLoader();
+loader.register(parser=>new VRMLoaderPlugin(parser));
 
-  /* ===== 3. AVATAR ===== */
-  let currentVrm;
-  const loader = new GLTFLoader();
-  loader.register((parser) => new VRMLoaderPlugin(parser));
-  loader.load(
-    VRM_URL,
-    (gltf) => {
-      const vrm = gltf.userData.vrm;
-      VRMUtils.removeUnnecessaryJoints(gltf.scene);
-      VRMUtils.rotateVRM0(vrm);
-      scene.add(vrm.scene);
-      currentVrm = vrm;
-      document.getElementById('loading').style.display = 'none';
-    },
-    (p) => { if (p.total) document.getElementById('loading').textContent = 'Loading 3D Avatar... ' + Math.round(100 * p.loaded / p.total) + '%'; },
-    (err) => {
-      console.error('Error loading VRM:', err);
-      document.getElementById('loading').textContent = 'Avatar failed to load. Check VRM_URL / network.';
-    }
-  );
+const AVATAR_LOCAL="./AliciaSolid_vrm-0.51.vrm";
+const AVATAR_FALLBACK="https://cdn.jsdelivr.net/gh/vrm-c/UniVRM@master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm";
 
-  /* ===== 4. ANIMATION ===== */
-  const clock = new THREE.Clock();
-  let isSpeaking = false;
-  const lookTarget = new THREE.Vector2(0, 0);
-  const ARM_DOWN = -1.2; // flip sign to +1.2 if the arms go up instead of down
-  const VISEMES = ['aa', 'ih', 'ou', 'ee', 'oh'];
-
-  container.addEventListener('pointermove', (e) => {
-    const r = container.getBoundingClientRect();
-    lookTarget.x = ((e.clientX - r.left) / r.width) * 2 - 1;
-    lookTarget.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+function loadAvatar(url,allowFallback){
+  loader.load(url,g=>{
+    vrm=g.userData.vrm;
+    VRMUtils.removeUnnecessaryJoints(g.scene);
+    if(vrm.meta?.metaVersion==="0") VRMUtils.rotateVRM0(vrm);
+    scene.add(vrm.scene);
+    status.style.display="none";
+  },p=>{
+    if(p.total) status.textContent="Loading Aria… "+Math.round(p.loaded/p.total*100)+"%";
+  },err=>{
+    console.warn("Avatar load failed",url,err);
+    if(allowFallback) loadAvatar(AVATAR_FALLBACK,false);
+    else status.textContent="Avatar failed. Upload AliciaSolid_vrm-0.51.vrm to the repo.";
   });
+}
+loadAvatar(AVATAR_LOCAL,true);
 
-  function animate() {
-    requestAnimationFrame(animate);
-    const dt = clock.getDelta();
-    const time = clock.elapsedTime;
+const clock=new THREE.Clock();
+let speaking=false, lookX=0, lookY=0;
+stage.addEventListener("pointermove",e=>{
+  const r=stage.getBoundingClientRect();
+  lookX=((e.clientX-r.left)/r.width)*2-1;
+  lookY=-((e.clientY-r.top)/r.height)*2+1;
+});
 
-    if (currentVrm) {
-      const em = currentVrm.expressionManager;
-      const spine = currentVrm.humanoid.getNormalizedBoneNode('spine');
-      if (spine) spine.rotation.x = Math.sin(time * Math.PI) * 0.015;
+function animate(){
+ requestAnimationFrame(animate);
+ const dt=clock.getDelta(),t=clock.elapsedTime;
+ if(vrm){
+   const h=vrm.humanoid, em=vrm.expressionManager;
+   const spine=h?.getNormalizedBoneNode("spine");
+   if(spine) spine.rotation.x=Math.sin(t*.8)*.012;
+   const la=h?.getNormalizedBoneNode("leftUpperArm"),ra=h?.getNormalizedBoneNode("rightUpperArm");
+   if(la) la.rotation.z=-1.2;
+   if(ra) ra.rotation.z=1.2;
+   const neck=h?.getNormalizedBoneNode("neck");
+   if(neck){
+     neck.rotation.y=THREE.MathUtils.lerp(neck.rotation.y,-lookX*.35,.06);
+     neck.rotation.x=THREE.MathUtils.lerp(neck.rotation.x,lookY*.22,.06);
+   }
+   if(em){
+     try{
+       em.setValue("blink",Math.sin(t*2.7)>.97?1:0);
+       ["aa","ih","ou","ee","oh"].forEach(x=>em.setValue(x,0));
+       if(speaking) em.setValue(["aa","ih","ou","ee","oh"][Math.floor(t*14)%5],.7);
+     }catch{}
+   }
+   vrm.update(dt);
+ }
+ controls.update(); renderer.render(scene,camera);
+}
+animate();
 
-      const lArm = currentVrm.humanoid.getNormalizedBoneNode('leftUpperArm');
-      const rArm = currentVrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-      if (lArm) lArm.rotation.z = ARM_DOWN;
-      if (rArm) rArm.rotation.z = -ARM_DOWN;
+const SYSTEM=`You are Aria, a friendly 3D anime companion. Be natural, warm, playful and concise.
+Reply in 1-3 short sentences. No markdown and no emojis.
+At the end, append exactly one JSON object: {"emotion":"neutral|happy|angry|sad|surprised|shy"}
+Do not put anything after that JSON object.`;
 
-      const neck = currentVrm.humanoid.getNormalizedBoneNode('neck');
-      if (neck) {
-        neck.rotation.y = THREE.MathUtils.lerp(neck.rotation.y, -lookTarget.x * 0.4, 0.08);
-        neck.rotation.x = THREE.MathUtils.lerp(neck.rotation.x, lookTarget.y * 0.3, 0.08);
-      }
+let history=[];
+try{history=JSON.parse(get("aria_memory","[]"))||[]}catch{history=[]}
+function trim(){
+ if(history.length>24) history=history.slice(-24);
+ while(history.length && history[0].role!=="user") history.shift();
+}
+function save(){trim();set("aria_memory",JSON.stringify(history))}
+function add(text,who){
+ const d=document.createElement("div"); d.className="msg "+who; d.textContent=text;
+ log.appendChild(d); log.scrollTop=log.scrollHeight;
+}
+function render(){
+ if(!history.length){add("Hi. I'm Aria. Tap Settings to connect a free AI key, then talk to me.","aria");return}
+ for(const m of history){
+   const text=m.role==="assistant"?clean(m.content).text:m.content;
+   if(text)add(text,m.role==="user"?"user":"aria");
+ }
+}
+function clean(raw){
+ let emotion="neutral",text=String(raw||"").trim();
+ const m=text.match(/\{[\s\S]*?"emotion"\s*:\s*"(neutral|happy|angry|sad|surprised|shy)"[\s\S]*?\}\s*$/i);
+ if(m){emotion=m[1].toLowerCase();text=text.slice(0,m.index).trim()}
+ text=text.replace(/^```(?:json)?|```$/g,"").trim();
+ return {text:text||"...",emotion};
+}
+render();
 
-      if (em) {
-        em.setValue('blink', Math.sin(time * 3.5) > 0.96 ? 1 : 0);
-        VISEMES.forEach(v => em.setValue(v, 0));
-        if (isSpeaking) {
-          em.setValue(VISEMES[Math.floor(time * 18) % 5], Math.random() * 0.7 + 0.3);
-        }
-      }
-      currentVrm.update(dt);
-    }
-    controls.update();
-    renderer.render(scene, camera);
-  }
-  animate();
+let emotionTimer;
+function emotion(name){
+ if(!vrm?.expressionManager)return;
+ const em=vrm.expressionManager;
+ ["happy","angry","sad","relaxed","surprised"].forEach(x=>{try{em.setValue(x,0)}catch{}});
+ clearTimeout(emotionTimer);
+ const map={neutral:null,happy:"happy",angry:"angry",sad:"sad",surprised:"surprised",shy:"relaxed"};
+ const x=map[name];
+ if(x){try{em.setValue(x,1)}catch{} emotionTimer=setTimeout(()=>emotion("neutral"),4500)}
+}
+function speak(text,emo){
+ emotion(emo);
+ if(!("speechSynthesis" in window))return;
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text),voices=speechSynthesis.getVoices();
+ const v=voices.find(x=>/^en(-US|-GB)?$/i.test(x.lang))||voices.find(x=>/^en/i.test(x.lang));
+ if(v)u.voice=v;
+ u.rate=1.04;u.pitch=1.16;
+ u.onstart=()=>speaking=true;
+ u.onend=()=>speaking=false;
+ u.onerror=()=>speaking=false;
+ speechSynthesis.speak(u);
+}
 
-  window.addEventListener('resize', () => {
-    camera.aspect = container.clientWidth / container.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(container.clientWidth, container.clientHeight);
-  });
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function transient(status,msg){return [408,429,500,502,503,504].includes(status)||/rate|limit|overload|busy|timeout|temporar/i.test(msg||"")}
 
-  /* ===== 5. MEMORY, AI & CHAT ===== */
-  const log = document.getElementById('log');
-  const input = document.getElementById('input');
-  const EMOTION_RE = /\{\s*"emotion"\s*:\s*"([^"]+)"\s*\}/;
+async function groq(){
+ const model="openai/gpt-oss-20b";
+ const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+   method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
+   body:JSON.stringify({model,temperature:.7,max_tokens:260,messages:[{role:"system",content:SYSTEM},...history]})
+ });
+ const d=await r.json().catch(()=>({}));
+ if(!r.ok){const e=new Error(d.error?.message||"Groq error "+r.status);e.status=r.status;e.transient=transient(r.status,e.message);throw e}
+ return d.choices?.[0]?.message?.content?.trim();
+}
 
-  const SYSTEM_PROMPT = `You are Aria, the user's best friend. You are a realistic, 3D anime girl.
-Personality: You are helpful and guiding, but you also tease, get irritated when annoyed, and have strong personal opinions. You are NOT a robotic AI assistant.
-Rules:
-- Keep responses short, natural, and conversational (1-3 sentences).
-- Never use emojis or markdown formatting.
-- Always remember past details the user has told you.
-- End your response with a JSON block defining your current facial expression based on the conversation context.
-Format your response EXACTLY like this:
-Your spoken reply text here. {"emotion": "neutral|happy|angry|sad|surprised|shy"}`;
+async function gemini(){
+ const model="gemini-3.8-flash";
+ const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{
+   method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":GEMINI_KEY},
+   body:JSON.stringify({
+     systemInstruction:{parts:[{text:SYSTEM}]},
+     contents:history.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]})),
+     generationConfig:{temperature:.7,maxOutputTokens:500}
+   })
+ });
+ const d=await r.json().catch(()=>({}));
+ if(!r.ok){const e=new Error(d.error?.message||"Gemini error "+r.status);e.status=r.status;e.transient=transient(r.status,e.message)||/not found|unavailable/i.test(e.message);throw e}
+ return d.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("").trim();
+}
 
-  let history = [];
-  try { history = JSON.parse(store.get('aria_memory')) || []; } catch { history = []; }
+async function getReply(){
+ if(!GROQ_KEY&&!GEMINI_KEY)throw new Error("Open Settings and add a free Groq API key.");
+ const providers=[];
+ if(GROQ_KEY)providers.push(groq);
+ if(GEMINI_KEY)providers.push(gemini);
+ let last;
+ for(const fn of providers){
+   for(let attempt=0;attempt<2;attempt++){
+     try{const x=await fn();if(x)return x;throw new Error("Empty AI reply")}
+     catch(e){last=e;if(!e.transient)break;await sleep(1000*(attempt+1))}
+   }
+ }
+ throw last||new Error("No AI provider configured");
+}
 
-  function trimHistory() {
-    if (history.length > 40) history = history.slice(-40);
-    while (history.length && history[0].role !== 'user') history.shift(); // Gemini needs user first
-  }
-  function saveMemory() { trimHistory(); store.set('aria_memory', JSON.stringify(history)); }
-
-  function addMessage(text, sender) {
-    const div = document.createElement('div');
-    div.className = `msg ${sender}`;
-    div.textContent = text;
-    log.appendChild(div);
-    log.scrollTop = log.scrollHeight;
-  }
-
-  function renderHistory() {
-    if (!history.length) {
-      addMessage('System initialized. I am loaded in full 3D now.', 'aria');
-      return;
-    }
-    history.forEach(m => {
-      if (m.role === 'user') addMessage(m.content, 'user');
-      else {
-        const t = m.content.replace(EMOTION_RE, '').trim();
-        if (t) addMessage(t, 'aria');
-      }
-    });
-  }
-  renderHistory();
-
-  let emotionTimer;
-  function setEmotion(name, ms = 4000) {
-    if (!currentVrm || !currentVrm.expressionManager) return;
-    const em = currentVrm.expressionManager;
-    ['happy', 'angry', 'sad', 'relaxed', 'surprised'].forEach(e => em.setValue(e, 0));
-    clearTimeout(emotionTimer);
-    if (name !== 'neutral') {
-      em.setValue(name, 1);
-      emotionTimer = setTimeout(() => setEmotion('neutral'), ms);
-    }
-  }
-
-  function speak(text, emotion) {
-    let blend = 'neutral';
-    if (['excited', 'happy', 'love'].includes(emotion)) blend = 'happy';
-    else if (['sad', 'worried'].includes(emotion)) blend = 'sad';
-    else if (emotion === 'angry') blend = 'angry';
-    else if (emotion === 'surprised') blend = 'surprised';
-    else if (emotion === 'shy') blend = 'relaxed';
-    setEmotion(blend, Math.max(2000, text.length * 80));
-
-    if (!('speechSynthesis' in window)) return;
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    const v = speechSynthesis.getVoices().find(v => /female|samantha|uk english/i.test(v.name));
-    if (v) u.voice = v;
-    u.rate = 1.05;
-    u.pitch = 1.2;
-    u.onstart = () => { isSpeaking = true; };
-    u.onend = u.onerror = () => { isSpeaking = false; };
-    speechSynthesis.speak(u);
-  }
-
-  let busy = false;
-  async function generateReply(userText) {
-    if (!API_KEY && !askKey()) {
-      addMessage('I need a Gemini API key first. Tap "API Key" at the top right.', 'aria');
-      return;
-    }
-    busy = true;
-    history.push({ role: 'user', content: userText });
-    trimHistory();
-
-    try {
-      const body = JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: history.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-        generationConfig: { temperature: 0.7, maxOutputTokens: 800, thinkingConfig: { thinkingLevel: 'low' } }
-      });
-      // Retry on overload (429/500/503), then fall back to the older model
-      let data, lastErr;
-      outer: for (const model of [MODEL, FALLBACK_MODEL]) {
-        for (let attempt = 0; attempt < 2; attempt++) {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
-            body
-          });
-          data = await res.json();
-          if (!data.error) break outer;
-          lastErr = data.error;
-          if (![429, 500, 503].includes(data.error.code)) throw new Error(data.error.message || 'API error');
-          await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
-        }
-      }
-      if (data.error) throw new Error(lastErr?.message || 'API error');
-
-      const raw = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
-      if (!raw) throw new Error(data.promptFeedback?.blockReason ? 'Blocked: ' + data.promptFeedback.blockReason : 'Empty reply');
-
-      history.push({ role: 'assistant', content: raw });
-      saveMemory();
-
-      const m = raw.match(EMOTION_RE);
-      const emotion = m ? m[1].toLowerCase() : 'neutral';
-      const spoken = raw.replace(EMOTION_RE, '').trim() || '...';
-      addMessage(spoken, 'aria');
-      speak(spoken, emotion);
-    } catch (err) {
-      console.error(err);
-      history.pop(); // drop the unanswered user message
-      saveMemory();
-      addMessage('Error: ' + err.message, 'aria');
-    } finally {
-      busy = false;
-    }
-  }
-
-  document.getElementById('form').onsubmit = (e) => {
-    e.preventDefault();
-    const val = input.value.trim();
-    if (!val || busy) return;
-    input.value = '';
-    addMessage(val, 'user');
-    generateReply(val);
-  };
-
-  if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+let busy=false;
+$("form").onsubmit=async e=>{
+ e.preventDefault();const text=input.value.trim();
+ if(!text||busy)return;
+ input.value="";add(text,"user");
+ busy=true;send.disabled=true;input.disabled=true;
+ const old=send.textContent;send.textContent="…";
+ history.push({role:"user",content:text});trim();
+ try{
+   const raw=await getReply(); if(!raw)throw new Error("Empty AI reply");
+   const parsed=clean(raw);
+   history.push({role:"assistant",content:raw});save();
+   add(parsed.text,"aria");speak(parsed.text,parsed.emotion);
+ }catch(err){
+   console.error(err);
+   history.pop();save();
+   add("I couldn't connect right now. "+(err.message||"Please try again."),"aria");
+ }finally{
+   busy=false;send.disabled=false;input.disabled=false;send.textContent=old;input.focus();
+ }
+};
+if("speechSynthesis" in window) speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();
 </script>
 </body>
 </html>
