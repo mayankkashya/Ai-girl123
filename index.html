@@ -4,41 +4,57 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101018">
-<title>Aria — Free & Optimized 3D AI</title>
+<title>Aria — Free 3D AI Companion</title>
 <style>
 :root{--pink:#e0559b;--bg:#0f0f15;--panel:#191922;--line:#343441}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column}
+html,body{height:100%;margin:0}
+body{overflow:hidden;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;height:100dvh;display:flex;flex-direction:column}
 #stage{position:relative;flex:1;min-height:0;background:radial-gradient(circle at 50% 5%,#30303c 0,#12121a 68%);touch-action:none}
 canvas{display:block;width:100%;height:100%}
-#status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:var(--pink);font-weight:700;font-size:16px;padding:16px;pointer-events:none}
-.topbar{position:absolute;top:0;left:0;right:0;padding:12px;display:flex;justify-content:space-between;pointer-events:none;z-index:10}
-.badge,.settings{pointer-events:auto;background:#0009;border:1px solid #ffffff22;border-radius:999px;padding:9px 13px;color:#fff;backdrop-filter:blur(4px)}
-.settings{cursor:pointer;font-weight:700;transition:0.2s}
-.settings:active{transform:scale(0.95)}
+#status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:var(--pink);font-weight:700;font-size:16px;padding:16px;max-width:85%;pointer-events:none}
+.topbar{position:absolute;top:0;left:0;right:0;padding:12px;display:flex;justify-content:space-between;pointer-events:none}
+.badge,.settings{pointer-events:auto;background:#0009;border:1px solid #ffffff22;border-radius:999px;padding:9px 13px;color:#fff}
+.badge.listening{border-color:#4ade80;color:#4ade80}
+.badge.thinking{border-color:#fbbf24;color:#fbbf24}
+.badge.speaking{border-color:var(--pink);color:var(--pink)}
+.settings{cursor:pointer;font-weight:700}
+#cam{display:none;position:absolute;right:12px;bottom:12px;width:112px;border-radius:14px;border:2px solid #ffffff44;transform:scaleX(-1);background:#000;z-index:3}
 .chat{height:38%;min-height:230px;display:flex;flex-direction:column;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -12px 30px #0008;z-index:5}
-.log{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
-.msg{max-width:85%;padding:10px 14px;border-radius:16px;line-height:1.4;font-size:15px;word-break:break-word;animation:fadeIn 0.3s ease}
-@keyframes fadeIn {from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)}}
+.log{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px;overscroll-behavior:contain}
+.msg{max-width:min(82%,700px);padding:10px 14px;border-radius:16px;line-height:1.4;font-size:16px;word-break:break-word}
 .user{align-self:flex-end;background:#2b2b37;border-bottom-right-radius:4px}
-.aria{align-self:flex-start;background:var(--pink);border-bottom-left-radius:4px;box-shadow:0 4px 12px rgba(224,85,155,0.2)}
-.controls{display:flex;gap:9px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#0004}
-#input{flex:1;border:1px solid #454552;background:#0d0d12;color:#fff;border-radius:28px;padding:12px 16px;font-size:16px;outline:none;transition:0.2s}
-#input:focus{border-color:var(--pink);box-shadow:0 0 0 2px rgba(224,85,155,0.2)}
-#send{border:0;border-radius:28px;background:var(--pink);color:#fff;font-weight:800;padding:0 22px;cursor:pointer;transition:0.2s}
-#send:disabled{opacity:.5;cursor:not-allowed}
-#settingsModal{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;padding:18px;z-index:20;backdrop-filter:blur(5px)}
-.card{width:100%;max-width:450px;background:#1b1b25;border:1px solid #444;border-radius:20px;padding:24px;box-shadow:0 20px 60px #000}
-.card h2{margin:0 0 12px}
-.card p{color:#aaa;font-size:13px;line-height:1.5;margin-bottom:16px}
-.card label{display:block;font-size:13px;color:#ccc;margin:12px 0 6px;font-weight:600}
-.card input, .card select{width:100%;padding:12px;border-radius:10px;border:1px solid #454552;background:#0d0d12;color:#fff;font-size:15px;margin-bottom:8px}
-.row{display:flex;gap:10px;margin-top:20px}
-.row button{flex:1;padding:12px;border-radius:10px;border:0;font-weight:700;cursor:pointer}
-.primary{background:var(--pink);color:#fff}
-.secondary{background:#33333f;color:#fff}
-.danger{background:#5a202f;color:#fff;flex:0.5}
-.status-badge{font-size:11px;padding:2px 6px;border-radius:4px;background:#2ecc71;color:#000;margin-left:8px;vertical-align:middle}
+.aria{align-self:flex-start;background:var(--pink);border-bottom-left-radius:4px}
+.controls{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#0004;align-items:center}
+#input{flex:1;min-width:0;border:1px solid #454552;background:#0d0d12;color:#fff;border-radius:28px;padding:13px 16px;font-size:17px;outline:none}
+#input:focus{border-color:var(--pink)}
+button{font:inherit}
+#send{border:0;border-radius:28px;background:var(--pink);color:#fff;font-weight:800;padding:0 20px;min-width:80px;height:48px}
+#send:disabled{opacity:.45}
+.icon{flex:none;width:48px;height:48px;border-radius:50%;border:1px solid #454552;background:#0d0d12;color:#fff;font-size:20px;padding:0;cursor:pointer}
+.icon.on{background:var(--pink);border-color:var(--pink)}
+#mic.on{animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px #e0559b44}}
+#settingsModal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
+.card{width:min(560px,100%);max-height:92dvh;overflow:auto;background:#1b1b25;border:1px solid #444;border-radius:20px;padding:20px;box-shadow:0 20px 60px #000}
+.card h2{margin:0 0 8px}
+.card p{color:#bbb;font-size:14px;line-height:1.4}
+.card label{display:block;font-size:13px;color:#ccc;margin:14px 0 6px}
+.card input[type=text],.card input[type=password],.card select{width:100%;padding:12px;border-radius:10px;border:1px solid #454552;background:#0d0d12;color:#fff;font-size:16px}
+.card input[type=range]{width:100%}
+.check{display:flex!important;align-items:center;gap:10px}
+.row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.row button{padding:11px 16px;border-radius:10px;border:0}
+.primary{background:var(--pink);color:#fff;font-weight:800}.secondary{background:#33333f;color:#fff}
+.danger{background:#5a202f;color:#fff}
+.small{font-size:12px;color:#999;margin-top:10px}
+@media (orientation:landscape) and (min-width:700px){
+ .chat{height:44%;min-height:220px}.msg{font-size:15px}
+}
+@media (min-width:800px){
+ .chat{height:36%}.controls{padding-left:24px;padding-right:24px}
+ .log{padding-left:24px;padding-right:24px}
+}
 </style>
 <script type="importmap">
 {
@@ -52,44 +68,58 @@ canvas{display:block;width:100%;height:100%}
 </head>
 <body>
 <div id="stage">
-  <div id="status">Loading Engine...</div>
+  <div id="status">Loading Aria…</div>
   <div class="topbar">
-    <div class="badge">ARIA <span class="status-badge">Fast Mode</span></div>
+    <div class="badge" id="badge">ARIA</div>
     <button class="settings" id="settingsBtn">Settings</button>
   </div>
+  <video id="cam" playsinline muted></video>
 </div>
 
 <section class="chat">
   <div class="log" id="log"></div>
   <form class="controls" id="form">
-    <input id="input" autocomplete="off" placeholder="Message Aria..." enterkeyhint="send">
+    <button class="icon" id="mic" type="button" title="Speak">🎤</button>
+    <button class="icon" id="camBtn" type="button" title="Camera">📷</button>
+    <input id="input" autocomplete="off" placeholder="Talk to Aria…" enterkeyhint="send">
     <button id="send" type="submit">Send</button>
   </form>
 </section>
 
 <div id="settingsModal">
   <div class="card">
-    <h2>Settings (100% Free)</h2>
-    <p>We use Groq & Gemini free tiers. Keys stay securely in your browser only.</p>
-    <label>Groq API Key (Super Fast)</label>
-    <input id="groqKey" type="password" placeholder="gsk_...">
-    
-    <label>Gemini API Key (Backup/Smart)</label>
-    <input id="geminiKey" type="password" placeholder="AIza...">
-    
-    <label>Language</label>
+    <h2>Aria Settings</h2>
+    <p>Your API keys are stored only in this browser's localStorage. For a public app, a server-side proxy is safer.</p>
+    <label for="groqKey">Groq API key</label>
+    <input id="groqKey" type="password" autocomplete="off" placeholder="gsk_…">
+    <label for="geminiKey">Gemini API key (backup + camera vision)</label>
+    <input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…">
+    <label for="language">Aria language</label>
     <select id="language">
-      <option value="hi">Hinglish / Hindi</option>
       <option value="en">English</option>
+      <option value="hi">हिन्दी (Hindi)</option>
     </select>
-    
+    <label for="voice">Voice (installed on this device)</label>
+    <select id="voice"></select>
+    <label for="rate">Speaking speed</label>
+    <input id="rate" type="range" min="0.7" max="1.3" step="0.05" value="0.95">
+    <label class="check"><input id="autoListen" type="checkbox"> Keep listening after Aria replies</label>
+    <label for="avatarFile">Avatar file (.vrm in your repo)</label>
+    <input id="avatarFile" type="text" autocomplete="off" placeholder="AriaIndian.vrm">
     <div class="row">
-      <button class="primary" id="saveKeys">Save & Apply</button>
-      <button class="secondary" id="closeSettings">Cancel</button>
-      <button class="danger" id="clearMemory">Clear</button>
+      <button class="primary" id="saveKeys">Save</button>
+      <button class="secondary" id="testVoice">Test voice</button>
+      <button class="secondary" id="closeSettings">Close</button>
+      <button class="danger" id="clearMemory">Clear memory</button>
     </div>
+    <div class="small">Chat: Groq openai/gpt-oss-20b. Camera snapshots go to Gemini (if key set) or a Groq vision model. Only one small frame is sent per message, never saved.</div>
   </div>
 </div>
+
+<script>
+window.addEventListener("error",e=>{const s=document.getElementById("status");if(s)s.textContent="App error: "+(e.message||"unknown error")});
+window.addEventListener("unhandledrejection",e=>{const s=document.getElementById("status");if(s)s.textContent="App error: "+((e.reason&&e.reason.message)||e.reason||"unknown error")});
+</script>
 
 <script type="module">
 import * as THREE from "three";
@@ -97,88 +127,146 @@ import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
 import {VRMLoaderPlugin,VRMUtils} from "@pixiv/three-vrm";
 
+/* ---- Model names: change here if a provider renames/retires one ---- */
+const GROQ_MODEL="openai/gpt-oss-20b";
+const GROQ_VISION_MODEL="meta-llama/llama-4-scout-17b-16e-instruct";
+const GEMINI_MODEL="gemini-3.8-flash";
+
 const $=id=>document.getElementById(id);
-const stage=$("stage"), status=$("status"), log=$("log"), input=$("input"), send=$("send");
+const stage=$("stage"), status=$("status"), log=$("log"), input=$("input"), send=$("send"), badge=$("badge");
 const get=(k,d="")=>{try{return localStorage.getItem(k)??d}catch{return d}};
 const set=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
+const norm=l=>(l||"").replace("_","-").toLowerCase();
 
-// Load Settings
 let GROQ_KEY=get("aria_groq");
 let GEMINI_KEY=get("aria_gemini");
-let LANGUAGE=get("aria_language","hi");
+let LANGUAGE=get("aria_language","en");
+let RATE=parseFloat(get("aria_rate","0.95"))||0.95;
+let AUTO_LISTEN=get("aria_autolisten")==="1";
+let AVATAR_FILE=get("aria_avatar","AriaIndian.vrm");
+
 $("language").value=LANGUAGE;
 $("groqKey").value=GROQ_KEY;
 $("geminiKey").value=GEMINI_KEY;
+$("rate").value=RATE;
+$("autoListen").checked=AUTO_LISTEN;
+$("avatarFile").value=AVATAR_FILE;
 
-// UI Handlers
-$("settingsBtn").onclick=()=>$("settingsModal").style.display="flex";
-$("closeSettings").onclick=()=>$("settingsModal").style.display="none";
-$("saveKeys").onclick=()=>{
-  GROQ_KEY=$("groqKey").value.trim(); 
-  GEMINI_KEY=$("geminiKey").value.trim();
-  LANGUAGE=$("language").value;
+/* ---------- state indicator ---------- */
+let state="idle";
+const STATE_LABEL={idle:"ARIA",listening:"● Listening…",thinking:"● Thinking…",speaking:"● Speaking…"};
+function setState(s){
+  state=s; badge.textContent=STATE_LABEL[s]; badge.className="badge "+(s==="idle"?"":s);
+}
+
+/* ---------- voices ---------- */
+function fillVoices(){
+  if(!("speechSynthesis" in window))return;
+  const lang=$("language").value;
+  const vs=speechSynthesis.getVoices().filter(v=>norm(v.lang).startsWith(lang));
+  const sel=$("voice");
+  sel.innerHTML="";
+  const auto=document.createElement("option");auto.value="";auto.textContent="Auto (best available)";sel.appendChild(auto);
+  vs.forEach(v=>{const o=document.createElement("option");o.value=v.name;o.textContent=v.name+" ("+v.lang+")";sel.appendChild(o)});
+  sel.value=get("aria_voice");
+}
+function pickVoice(){
+  const vs=speechSynthesis.getVoices();
+  const pre=LANGUAGE==="hi"?"hi":"en";
+  const saved=get("aria_voice");
+  if(saved){const v=vs.find(x=>x.name===saved&&norm(x.lang).startsWith(pre));if(v)return v}
+  const prefs=LANGUAGE==="hi"?["hi-in","hi"]:["en-in","en-gb","en-us","en"];
+  for(const p of prefs){
+    const c=vs.filter(x=>norm(x.lang)===p||norm(x.lang).startsWith(p+"-"));
+    if(c.length)return c.find(x=>/female|swara|heera|lekha|neerja|kalpana|google/i.test(x.name))||c[0];
+  }
+  return null;
+}
+if("speechSynthesis" in window) speechSynthesis.onvoiceschanged=()=>{speechSynthesis.getVoices();fillVoices()};
+$("language").onchange=()=>{set("aria_voice","");fillVoices()};
+
+/* ---------- settings ---------- */
+function applyPrefs(){
+  GROQ_KEY=$("groqKey").value.trim(); GEMINI_KEY=$("geminiKey").value.trim();
+  LANGUAGE=$("language").value; RATE=parseFloat($("rate").value)||0.95;
+  AUTO_LISTEN=$("autoListen").checked;
+  const newAvatar=$("avatarFile").value.trim()||"AriaIndian.vrm";
+  const avatarChanged=newAvatar!==AVATAR_FILE;
+  AVATAR_FILE=newAvatar;
   set("aria_groq",GROQ_KEY); set("aria_gemini",GEMINI_KEY); set("aria_language",LANGUAGE);
+  set("aria_rate",String(RATE)); set("aria_autolisten",AUTO_LISTEN?"1":"0");
+  set("aria_voice",$("voice").value); set("aria_avatar",AVATAR_FILE);
+  return avatarChanged;
+}
+$("settingsBtn").onclick=()=>{fillVoices();$("settingsModal").style.display="flex"};
+$("closeSettings").onclick=()=>{$("settingsModal").style.display="none"};
+$("saveKeys").onclick=()=>{
+  const reload=applyPrefs();
   $("settingsModal").style.display="none";
-  add(LANGUAGE==="hi" ? "Settings save ho gayi hain! Ab hum fast mode me baat kar sakte hain." : "Settings saved! We are now running in fast mode.","aria");
+  if(reload){location.reload();return}
+  add(LANGUAGE==="hi" ? "सेटिंग्स सेव हो गईं।" : "Settings saved.","aria");
+};
+$("testVoice").onclick=()=>{
+  applyPrefs(); stopSpeaking(); primeSpeech();
+  speakChunk(LANGUAGE==="hi" ? "नमस्ते, मैं आरिया हूँ। क्या आप मुझे सुन पा रहे हैं?" : "Hi, I'm Aria. Can you hear me clearly?");
 };
 $("clearMemory").onclick=()=>{
-  if(confirm("Delete chat history?")){
-    localStorage.removeItem("aria_memory"); history=[]; log.innerHTML="";
-    add("Memory cleared.","aria");
+  if(confirm("Clear Aria's conversation memory on this device?")){
+    try{localStorage.removeItem("aria_memory")}catch{}
+    history=[]; log.innerHTML="";
+    add("Memory cleared. Fresh start.","aria");
   }
 };
 
-// ---------------- PERFORMANCE OPTIMIZED 3D SETUP ----------------
+/* ---------- 3D scene ---------- */
 const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(35,1,.1,20);
-camera.position.set(0,1.35,1.4);
-
-// FIX 1: Performance Optimization. Don't use extremely high pixel ratio on mobile.
-// Capping pixel ratio at 1.5 max ensures 60fps on phones without blurry look.
+const camera=new THREE.PerspectiveCamera(30,1,.1,20);
+camera.position.set(0,1.35,1.35);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:"high-performance"});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 1.5)); 
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
 stage.appendChild(renderer.domElement);
 
 const controls=new OrbitControls(camera,renderer.domElement);
-controls.enableDamping=true; controls.enablePan=false; controls.minDistance=0.8; controls.maxDistance=2.5;
+controls.enableDamping=true; controls.enablePan=false; controls.minDistance=.8; controls.maxDistance=2.7;
 controls.target.set(0,1.25,0); controls.update();
-
-// Basic lightweight lighting
-scene.add(new THREE.HemisphereLight(0xffffff,0x444444,0.8));
-const dl=new THREE.DirectionalLight(0xffffff,1.0); 
-dl.position.set(1,2,1); 
-scene.add(dl);
+scene.add(new THREE.HemisphereLight(0xffffff,0x444444,.9));
+const dl=new THREE.DirectionalLight(0xffffff,1.1); dl.position.set(1.5,2.5,1.5); scene.add(dl);
 
 function resize(){
   const w=stage.clientWidth,h=stage.clientHeight;
-  camera.aspect=w/Math.max(h,1); camera.updateProjectionMatrix(); 
-  renderer.setSize(w,h,false);
+  camera.aspect=w/Math.max(h,1); camera.updateProjectionMatrix(); renderer.setSize(w,h,false);
 }
-window.addEventListener("resize",resize); resize();
+addEventListener("resize",resize); resize();
 
 let vrm=null;
 const loader=new GLTFLoader();
 loader.register(parser=>new VRMLoaderPlugin(parser));
 
-const AVATAR_URL="https://cdn.jsdelivr.net/gh/vrm-c/UniVRM@master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm";
-
-loader.load(AVATAR_URL,g=>{
-  vrm=g.userData.vrm;
-  VRMUtils.removeUnnecessaryJoints(g.scene);
-  if(vrm.meta?.metaVersion==="0") VRMUtils.rotateVRM0(vrm);
-  scene.add(vrm.scene);
-  status.style.display="none";
-},p=>{
-  if(p.total) status.textContent="Loading 3D Model... "+Math.round(p.loaded/p.total*100)+"%";
-},err=>{
-  console.error(err);
-  status.textContent="Failed to load 3D Model. Check network.";
-});
+// Tries your custom avatar first, then Alicia (local), then Alicia (CDN).
+const AVATAR_URLS=[
+  "./"+AVATAR_FILE.replace(/^\.?\//,""),
+  "./AliciaSolid_vrm-0.51.vrm",
+  "https://cdn.jsdelivr.net/gh/vrm-c/UniVRM@master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm"
+];
+function loadAvatar(i){
+  loader.load(AVATAR_URLS[i],g=>{
+    vrm=g.userData.vrm;
+    VRMUtils.removeUnnecessaryJoints(g.scene);
+    if(vrm.meta?.metaVersion==="0") VRMUtils.rotateVRM0(vrm);
+    scene.add(vrm.scene);
+    status.style.display="none";
+  },p=>{
+    if(p.total) status.textContent="Loading Aria… "+Math.round(p.loaded/p.total*100)+"%";
+  },err=>{
+    console.warn("Avatar load failed",AVATAR_URLS[i],err);
+    if(i+1<AVATAR_URLS.length) loadAvatar(i+1);
+    else status.textContent="Avatar failed to load. Check the .vrm file name in the repo.";
+  });
+}
+loadAvatar(0);
 
 const clock=new THREE.Clock();
-let speaking=false, lookX=0, lookY=0;
-
-// Mouse Tracking (Optimized)
+let speaking=false, lookX=0, lookY=0, mouth=0;
 stage.addEventListener("pointermove",e=>{
   const r=stage.getBoundingClientRect();
   lookX=((e.clientX-r.left)/r.width)*2-1;
@@ -191,200 +279,357 @@ function animate(){
  if(vrm){
    const h=vrm.humanoid, em=vrm.expressionManager;
    const spine=h?.getNormalizedBoneNode("spine");
-   if(spine) spine.rotation.x=Math.sin(t*1.5)*0.008; // subtle breathing
-   
-   // Fix arms T-pose
+   if(spine) spine.rotation.x=Math.sin(t*.8)*.012;
    const la=h?.getNormalizedBoneNode("leftUpperArm"),ra=h?.getNormalizedBoneNode("rightUpperArm");
-   if(la) la.rotation.z=1.1;
-   if(ra) ra.rotation.z=-1.1;
-   
-   // Head tracking
+   if(la) la.rotation.z=1.05;
+   if(ra) ra.rotation.z=-1.05;
    const neck=h?.getNormalizedBoneNode("neck");
    if(neck){
-     neck.rotation.y=THREE.MathUtils.lerp(neck.rotation.y,-lookX*.4,.1);
-     neck.rotation.x=THREE.MathUtils.lerp(neck.rotation.x,lookY*.3,.1);
+     neck.rotation.y=THREE.MathUtils.lerp(neck.rotation.y,-lookX*.35,.06);
+     neck.rotation.x=THREE.MathUtils.lerp(neck.rotation.x,lookY*.22,.06);
+     // small head tilt while thinking / listening
+     const tilt=state==="thinking"?.1:state==="listening"?-.06:0;
+     neck.rotation.z=THREE.MathUtils.lerp(neck.rotation.z,tilt,.06);
    }
-   
-   // Lip sync & Blinking
    if(em){
-     em.setValue("blink",Math.sin(t*3)>.95?1:0);
-     ["aa","ih","ou","ee","oh"].forEach(x=>em.setValue(x,0));
-     if(speaking) em.setValue(["aa","ih","ou","ee","oh"][Math.floor(t*12)%5],.8);
+     try{
+       em.setValue("blink",Math.sin(t*2.7)>.97?1:0);
+       ["aa","ih","ou","ee","oh"].forEach(x=>em.setValue(x,0));
+       if(speaking){
+         const target=.35+.4*Math.abs(Math.sin(t*11));
+         mouth=THREE.MathUtils.lerp(mouth,target,.35);
+         em.setValue(["aa","oh","aa","ih","ou"][Math.floor(t*7)%5],mouth);
+       }else mouth=0;
+     }catch{}
    }
    vrm.update(dt);
  }
- controls.update(); 
- renderer.render(scene,camera);
+ controls.update(); renderer.render(scene,camera);
 }
 animate();
 
-// ---------------- AI & CHAT LOGIC ----------------
+/* ---------- prompt ---------- */
 function systemPrompt(){
-  const lang = LANGUAGE === "hi" ? "Hinglish and Hindi mix" : "English";
-  return `You are Aria, a friendly, smart 3D anime companion. 
-1. Keep answers SHORT (1-2 sentences maximum). Fast chat mode.
-2. Reply in ${lang} in a natural, casual tone.
-3. No markdown (*, **). No emojis.
-4. End your message with exactly one JSON object like this: {"emotion":"neutral|happy|angry|sad|surprised|shy"}`;
+  const lang = LANGUAGE === "hi" ? "Hindi (Devanagari script)" : "English";
+  return `You are Aria, a warm, friendly, playful young Indian woman companion shown as a 3D avatar. Be natural and concise.
+Reply in ${lang}. Use natural conversational ${lang}, the way a friend speaks.
+Reply in 1-3 short sentences. End each sentence with proper punctuation. No markdown, no emojis, no lists.
+Start your reply with exactly one emotion tag in square brackets, then your text. Allowed tags: [neutral] [happy] [angry] [sad] [surprised] [shy]
+Example: [happy] ${LANGUAGE==="hi" ? "अरे वाह, यह तो बहुत अच्छा है!" : "Oh wow, that's wonderful!"}
+When a camera snapshot is attached to the user's message, you can see the user; describe what you see naturally and kindly. Never say you cannot see images.`;
 }
 
+/* ---------- history ---------- */
 let history=[];
 try{history=JSON.parse(get("aria_memory","[]"))||[]}catch{history=[]}
-
-function save(){
-  if(history.length>20) history=history.slice(-20); // Keep memory light
-  while(history.length && history[0].role!=="user") history.shift();
-  set("aria_memory",JSON.stringify(history));
+function trim(){
+ if(history.length>24) history=history.slice(-24);
+ while(history.length && history[0].role!=="user") history.shift();
 }
-
+function save(){trim();set("aria_memory",JSON.stringify(history))}
 function add(text,who){
-  const d=document.createElement("div"); 
-  d.className="msg "+who; 
-  d.textContent=text;
-  log.appendChild(d); 
-  // Smooth scroll
-  setTimeout(()=>log.scrollTop=log.scrollHeight, 50);
+ const d=document.createElement("div"); d.className="msg "+who; d.textContent=text;
+ log.appendChild(d); log.scrollTop=log.scrollHeight; return d;
 }
 
-function clean(raw){
-  let emotion="neutral",text=String(raw||"").trim();
-  const m=text.match(/\{[\s\S]*?"emotion"\s*:\s*"(neutral|happy|angry|sad|surprised|shy)"[\s\S]*?\}\s*$/i);
-  if(m){emotion=m[1].toLowerCase();text=text.slice(0,m.index).trim()}
-  text=text.replace(/^```(?:json)?|```$/g,"").trim();
-  return {text:text||"...",emotion};
+// Handles "[happy] text" (new) and "text {"emotion":"happy"}" (old saved history).
+function parseLive(raw){
+ let emotion="neutral",text=String(raw||"").replace(/^\s+/,""),ready=true;
+ const valid=/^(neutral|happy|angry|sad|surprised|shy)$/i;
+ if(text.startsWith("[")){
+   const end=text.indexOf("]");
+   if(end<0)return {text:"",emotion,ready:false};
+   const tag=text.slice(1,end).trim();
+   if(valid.test(tag)){emotion=tag.toLowerCase();text=text.slice(end+1).replace(/^\s+/,"")}
+ }
+ const j=text.indexOf("{");
+ if(j>=0){
+   const m=text.slice(j).match(/"emotion"\s*:\s*"(neutral|happy|angry|sad|surprised|shy)"/i);
+   if(m&&emotion==="neutral")emotion=m[1].toLowerCase();
+   text=text.slice(0,j);
+ }
+ text=text.replace(/```(?:json)?/g,"");
+ return {text,emotion,ready};
 }
+function clean(raw){const p=parseLive(raw);return {text:p.text.trim()||"...",emotion:p.emotion}}
 
-// Initial Render
-if(!history.length){
-  add(LANGUAGE==="hi" ? "Namaste! Main Aria hoon. Upar Settings se free API key daalo, fir chat karte hain!" : "Hi! I'm Aria. Add a free API key in settings and let's chat!","aria");
-} else {
-  history.forEach(m=>{
-    const text=m.role==="assistant"?clean(m.content).text:m.content;
-    if(text)add(text,m.role==="user"?"user":"aria");
-  });
+function render(){
+ if(!history.length){
+  add(LANGUAGE==="hi" ? "नमस्ते। मैं आरिया हूँ। Settings में जाकर AI key जोड़ें, फिर मुझसे बात करें।" : "Hi. I'm Aria. Tap Settings to connect a free AI key, then talk to me.","aria");
+  return;
 }
+ for(const m of history){
+   const text=m.role==="assistant"?clean(m.content).text:m.content;
+   if(text)add(text,m.role==="user"?"user":"aria");
+ }
+}
+render();
 
-// Voice setup
+/* ---------- emotion ---------- */
 let emotionTimer;
-function emotionSet(name){
-  if(!vrm?.expressionManager)return;
-  const em=vrm.expressionManager;
-  ["happy","angry","sad","relaxed","surprised"].forEach(x=>{try{em.setValue(x,0)}catch{}});
-  clearTimeout(emotionTimer);
-  const map={neutral:null,happy:"happy",angry:"angry",sad:"sad",surprised:"surprised",shy:"relaxed"};
-  const x=map[name];
-  if(x){
-    try{em.setValue(x,1)}catch{} 
-    emotionTimer=setTimeout(()=>emotionSet("neutral"),4000);
-  }
+function emotion(name){
+ if(!vrm?.expressionManager)return;
+ const em=vrm.expressionManager;
+ ["happy","angry","sad","relaxed","surprised"].forEach(x=>{try{em.setValue(x,0)}catch{}});
+ clearTimeout(emotionTimer);
+ const map={neutral:null,happy:"happy",angry:"angry",sad:"sad",surprised:"surprised",shy:"relaxed"};
+ const x=map[name];
+ if(x){try{em.setValue(x,1)}catch{} emotionTimer=setTimeout(()=>emotion("neutral"),4500)}
 }
 
-function speak(text,emo){
-  emotionSet(emo);
-  if(!("speechSynthesis" in window))return;
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  const voices=speechSynthesis.getVoices();
-  const preferred=LANGUAGE==="hi" ? ["hi-IN","hi"] : ["en-US","en-GB"];
-  const v=voices.find(x=>preferred.includes(x.lang));
-  if(v) u.voice=v;
-  u.lang=LANGUAGE==="hi" ? "hi-IN" : "en-US";
-  u.rate=1.05; u.pitch=1.1;
-  u.onstart=()=>speaking=true;
-  u.onend=()=>speaking=false;
-  u.onerror=()=>speaking=false;
-  speechSynthesis.speak(u);
+/* ---------- speech output (sentence queue) ---------- */
+let pending=0, busy=false, lastOk=true, listening=false;
+function primeSpeech(){
+ // Android/Chrome only allows speech after a user gesture; this "unlocks" it.
+ try{if("speechSynthesis" in window){const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}}catch{}
+}
+function speakChunk(text){
+ if(!("speechSynthesis" in window)||!text.trim())return;
+ const u=new SpeechSynthesisUtterance(text.trim());
+ const v=pickVoice();
+ if(v){u.voice=v;u.lang=v.lang}else u.lang=LANGUAGE==="hi"?"hi-IN":"en-IN";
+ u.rate=RATE; u.pitch=LANGUAGE==="hi"?1.05:1.1;
+ pending++;
+ u.onstart=()=>{speaking=true;setState("speaking")};
+ const done=()=>{pending=Math.max(0,pending-1);if(!pending&&!busy)finishSpeaking()};
+ u.onend=done; u.onerror=done;
+ speechSynthesis.speak(u);
+}
+function stopSpeaking(){
+ pending=0; speaking=false;
+ try{speechSynthesis.cancel()}catch{}
+}
+function finishSpeaking(){
+ speaking=false;
+ if(listening)return;
+ if(AUTO_LISTEN&&lastOk&&SR){setState("idle");setTimeout(()=>{if(!busy&&!listening&&!pending)startListening()},400)}
+ else setState("idle");
 }
 
-// ---------------- FIX 2: FREE & FAST API CALLS ----------------
-async function callGroq(){
-  // Using the absolute fastest free model
-  const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
-    method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
-    body:JSON.stringify({
-      model:"llama-3.1-8b-instant", 
-      temperature:0.7,
-      max_tokens:150, // Smaller tokens = faster reply
-      messages:[{role:"system",content:systemPrompt()},...history]
-    })
-  });
-  if(!r.ok) throw new Error("Groq Error: "+r.status);
-  const d=await r.json();
-  return d.choices[0].message.content.trim();
+// Next complete sentence in `s`, or null if none is ready yet.
+function nextSentence(s,final){
+ const m=s.match(/^[\s\S]*?[.!?।॥\n]+(?=\s)/);
+ if(m)return m[0];
+ if(final&&s.trim())return s;
+ if(s.length>140){const c=Math.max(s.lastIndexOf(",",140),s.lastIndexOf("،",140));if(c>40)return s.slice(0,c+1)}
+ return null;
 }
 
-async function callGemini(){
-  // Using the fastest Gemini free tier model
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      systemInstruction:{parts:[{text:systemPrompt()}]},
-      contents:history.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]})),
-      generationConfig:{temperature:0.7,maxOutputTokens:150}
-    })
-  });
-  if(!r.ok) throw new Error("Gemini Error: "+r.status);
-  const d=await r.json();
-  return d.candidates[0].content.parts[0].text.trim();
+/* ---------- AI providers (streaming) ---------- */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function transient(status,msg){return [408,429,500,502,503,504].includes(status)||/rate|limit|overload|busy|timeout|temporar/i.test(msg||"")}
+
+async function* sse(res){
+ const rd=res.body.getReader(),dec=new TextDecoder();let buf="";
+ while(true){
+   const {done,value}=await rd.read();if(done)break;
+   buf+=dec.decode(value,{stream:true});
+   let i;
+   while((i=buf.indexOf("\n"))>=0){
+     const line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+     if(line.startsWith("data:")){
+       const d=line.slice(5).trim();
+       if(d&&d!=="[DONE]"){try{yield JSON.parse(d)}catch{}}
+     }
+   }
+ }
 }
 
-// FIX 3: Removed the blocking sleep loop. Immediate fallback.
-async function getFastReply(){
-  if(!GROQ_KEY && !GEMINI_KEY) throw new Error("Please add API keys in settings.");
-  
-  // Try Groq First (It's faster)
-  if(GROQ_KEY){
-    try{
-      return await callGroq();
-    }catch(e){
-      console.warn("Groq failed, trying Gemini...", e);
-      if(!GEMINI_KEY) throw e;
-    }
-  }
-  
-  // Try Gemini if Groq fails or isn't provided
-  if(GEMINI_KEY){
-    try{
-      return await callGemini();
-    }catch(e){
-      throw new Error("Both APIs failed. Check keys or internet.");
-    }
-  }
+async function groq(image,onDelta){
+ const msgs=history.map(m=>({role:m.role,content:m.content}));
+ const body={temperature:.7,max_tokens:700,stream:true};
+ if(image){
+   const last=msgs[msgs.length-1];
+   last.content=[{type:"text",text:last.content},{type:"image_url",image_url:{url:image}}];
+   body.model=GROQ_VISION_MODEL;
+ }else{
+   body.model=GROQ_MODEL;
+   body.reasoning_effort="low";   // much faster first token on gpt-oss
+   body.include_reasoning=false;
+ }
+ body.messages=[{role:"system",content:systemPrompt()},...msgs];
+ const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+   method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
+   body:JSON.stringify(body)
+ });
+ if(!r.ok){
+   const d=await r.json().catch(()=>({}));
+   const e=new Error(d.error?.message||"Groq error "+r.status);e.status=r.status;e.transient=transient(r.status,e.message);throw e;
+ }
+ for await(const c of sse(r)){
+   const t=c.choices?.[0]?.delta?.content;
+   if(t)onDelta(t);
+ }
 }
 
-// Form Submit
-let busy=false;
-$("form").onsubmit=async e=>{
-  e.preventDefault();
-  const text=input.value.trim();
-  if(!text||busy)return;
-  
-  input.value=""; 
-  add(text,"user");
-  
-  busy=true; send.disabled=true; input.disabled=true;
-  const old=send.textContent; send.textContent="...";
-  
-  history.push({role:"user",content:text}); save();
-  
-  try{
-    const raw = await getFastReply();
-    const parsed = clean(raw);
-    history.push({role:"assistant",content:raw}); save();
-    add(parsed.text,"aria"); 
-    speak(parsed.text,parsed.emotion);
-  }catch(err){
-    console.error(err);
-    history.pop(); save();
-    add("Oops: "+err.message,"aria");
-  }finally{
-    busy=false; send.disabled=false; input.disabled=false; 
-    send.textContent=old; input.focus();
-  }
+async function gemini(image,onDelta){
+ const contents=history.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}));
+ if(image){
+   contents[contents.length-1].parts.push({inlineData:{mimeType:"image/jpeg",data:image.split(",")[1]}});
+ }
+ const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+GEMINI_MODEL+":streamGenerateContent?alt=sse",{
+   method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":GEMINI_KEY},
+   body:JSON.stringify({
+     systemInstruction:{parts:[{text:systemPrompt()}]},
+     contents,
+     generationConfig:{temperature:.7,maxOutputTokens:500}
+   })
+ });
+ if(!r.ok){
+   const d=await r.json().catch(()=>({}));
+   const e=new Error(d.error?.message||"Gemini error "+r.status);e.status=r.status;e.transient=transient(r.status,e.message)||/not found|unavailable/i.test(e.message);throw e;
+ }
+ for await(const c of sse(r)){
+   const t=c.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("");
+   if(t)onDelta(t);
+ }
+}
+
+async function getReply(image,onDelta){
+ if(!GROQ_KEY&&!GEMINI_KEY)throw new Error(LANGUAGE==="hi" ? "Settings खोलकर एक free Groq API key जोड़ें।" : "Open Settings and add a free Groq API key.");
+ const providers=[];
+ if(image){ if(GEMINI_KEY)providers.push(gemini); if(GROQ_KEY)providers.push(groq); }
+ else{ if(GROQ_KEY)providers.push(groq); if(GEMINI_KEY)providers.push(gemini); }
+ let last,got=false;
+ const wrap=d=>{got=true;onDelta(d)};
+ for(const fn of providers){
+   for(let attempt=0;attempt<2;attempt++){
+     try{await fn(image,wrap);if(got)return;throw new Error("Empty AI reply")}
+     catch(e){
+       if(got)return;               // partial reply already shown/spoken: keep it
+       last=e;if(!e.transient)break;await sleep(800*(attempt+1));
+     }
+   }
+ }
+ throw last||new Error("No AI provider configured");
+}
+
+/* ---------- camera ---------- */
+const cam=$("cam"),camBtn=$("camBtn");
+let camStream=null;
+function stopCamera(){
+ if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
+ cam.srcObject=null;cam.style.display="none";camBtn.classList.remove("on");
+}
+camBtn.onclick=async()=>{
+ if(camStream){stopCamera();return}
+ if(!navigator.mediaDevices?.getUserMedia){add("Camera isn't available in this browser (needs HTTPS).","aria");return}
+ try{
+   camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false});
+   cam.srcObject=camStream;await cam.play();
+   cam.style.display="block";camBtn.classList.add("on");
+ }catch(e){
+   camStream=null;
+   add("Camera permission was denied or no camera was found.","aria");
+ }
+};
+// Privacy: switch the camera off if the app goes to the background.
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stopCamera()});
+function captureFrame(){
+ if(!camStream||!cam.videoWidth)return null;
+ const s=Math.min(1,512/Math.max(cam.videoWidth,cam.videoHeight));
+ const c=document.createElement("canvas");
+ c.width=Math.round(cam.videoWidth*s);c.height=Math.round(cam.videoHeight*s);
+ c.getContext("2d").drawImage(cam,0,0,c.width,c.height);
+ return c.toDataURL("image/jpeg",.7);   // sent once, never stored
+}
+
+/* ---------- speech input ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const mic=$("mic");
+let rec=null;
+function startListening(){
+ if(!SR){add(LANGUAGE==="hi"?"इस ब्राउज़र में voice input उपलब्ध नहीं है। Chrome इस्तेमाल करें या टाइप करें।":"Voice input isn't supported in this browser. Use Chrome, or type instead.","aria");return}
+ if(busy||listening)return;
+ stopSpeaking();primeSpeech();
+ rec=new SR();
+ rec.lang=LANGUAGE==="hi"?"hi-IN":"en-IN";
+ rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
+ let finalText="",failed=false;
+ rec.onstart=()=>{listening=true;mic.classList.add("on");setState("listening")};
+ rec.onresult=e=>{
+   let interim="";
+   for(let i=e.resultIndex;i<e.results.length;i++){
+     const r=e.results[i];
+     if(r.isFinal)finalText+=r[0].transcript;else interim+=r[0].transcript;
+   }
+   input.value=(finalText+interim).trim();
+ };
+ rec.onerror=e=>{
+   failed=true;
+   if(e.error==="not-allowed"||e.error==="service-not-allowed")add("Microphone permission denied. Allow it in the browser's site settings.","aria");
+   else if(e.error==="network")add("Speech recognition needs an internet connection.","aria");
+   // "no-speech" / "aborted": stay quiet
+ };
+ rec.onend=()=>{
+   listening=false;mic.classList.remove("on");
+   const t=(finalText||input.value).trim();
+   input.value="";
+   if(t&&!failed)handleUser(t);
+   else{lastOk=false;setState("idle")}
+ };
+ try{rec.start()}catch{listening=false;mic.classList.remove("on")}
+}
+mic.onclick=()=>{
+ if(listening){try{rec.stop()}catch{}return}
+ lastOk=true;startListening();
 };
 
-// Force voice loading on browsers
-if("speechSynthesis" in window) speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();
+/* ---------- main chat flow ---------- */
+async function handleUser(text){
+ if(!text||busy)return;
+ busy=true;lastOk=true;
+ stopSpeaking();primeSpeech();
+ send.disabled=true;input.disabled=true;
+ add(text,"user");
+ const image=captureFrame();
+ history.push({role:"user",content:text});trim();
+ setState("thinking");
+ const bubble=add("…","aria");
+
+ let raw="",spoken=0,emoSet=false,started=false;
+ const pump=final=>{
+   const p=parseLive(raw);
+   if(!p.ready)return;
+   if(!emoSet){emoSet=true;emotion(p.emotion)}
+   if(p.text){bubble.textContent=p.text;log.scrollTop=log.scrollHeight}
+   // speak every complete sentence as soon as it exists
+   while(true){
+     const rest=p.text.slice(spoken);
+     const s=nextSentence(rest,final);
+     if(!s)break;
+     spoken+=s.length;
+     if(s.trim()){speakChunk(s);started=true}
+   }
+ };
+ try{
+   await getReply(image,d=>{raw+=d;pump(false)});
+   pump(true);
+   if(!raw.trim())throw new Error("Empty AI reply");
+   history.push({role:"assistant",content:raw});save();
+ }catch(err){
+   console.error(err);
+   lastOk=false;
+   if(raw.trim()){pump(true);history.push({role:"assistant",content:raw});save()}
+   else{
+     history.pop();save();
+     bubble.textContent="I couldn't connect right now. "+(err.message||"Please try again.");
+     setState("idle");
+   }
+ }finally{
+   busy=false;send.disabled=false;input.disabled=false;send.textContent="Send";
+   if(!pending){ if(started)finishSpeaking(); else if(state==="thinking")setState("idle"); }
+   if(!AUTO_LISTEN)input.focus();
+ }
+}
+
+$("form").onsubmit=e=>{
+ e.preventDefault();
+ const t=input.value.trim();
+ if(!t||busy)return;
+ input.value="";
+ handleUser(t);
+};
 </script>
 </body>
 </html>
